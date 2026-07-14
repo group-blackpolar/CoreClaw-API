@@ -2,11 +2,13 @@ name: Deploy API
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -14,10 +16,28 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+
           script: |
             set -e
-            cd /var/www/blackpolar-api
-            git pull origin main
-            docker compose build api
+
+            echo "Starting deployment"
+
+            cd /var/www/coreclaw-api
+
+            echo "Updating repository"
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "Building Docker image"
+            docker compose build --no-cache api
+
+            echo "Restarting containers"
+            docker compose down
+
+            echo "Starting containers"
             docker compose up -d
-            echo "✓ blackpolar-api deployed"
+
+            echo "Cleaning unused images"
+            docker image prune -f
+
+            echo "coreclaw-api deployed"

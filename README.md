@@ -1,4 +1,4 @@
-# CoreClaw API
+# CoreCrow API
 
 API de Black Polar (Fastify + Prisma + Better Auth)
 

@@ -1,10 +1,12 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { createClient } from "redis";
 import { prisma } from "./database.js";
 
-// CORS_ORIGINS / TRUSTED_ORIGINS: lista separada por comas en .env.
-// Así, cuando agregues un dominio nuevo (ej. portfolios.blackpolar.org)
-// no hay que tocar código, solo la variable de entorno.
+const redis = createClient({ url: process.env.REDIS_URL });
+redis.on("error", (err) => console.error("Redis error:", err));
+await redis.connect();
+
 const trustedOrigins = (process.env.TRUSTED_ORIGINS ?? "http://localhost:3000,http://localhost:3001")
   .split(",")
   .map((origin) => origin.trim())
@@ -14,6 +16,18 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+  secondaryStorage: {
+    get: (key) => redis.get(key),
+    set: (key, value, ttl) => (ttl ? redis.set(key, value, { EX: ttl }) : redis.set(key, value)),
+    delete: async (key) => {
+      await redis.del(key);
+      return null;
+    },
+  },
+  session: {
+    expiresIn: 60 * 60 * 12,      // timeout absoluto: 12 horas
+    updateAge: 60 * 30,            // idle: se refresca si hay actividad cada 30 min
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
@@ -27,15 +41,8 @@ export const auth = betterAuth({
   },
   user: {
     additionalFields: {
-      role: {
-        type: "string",
-        defaultValue: "USER",
-        input: false, // el usuario no puede setear su propio rol
-      },
-      adminUniqueId: {
-        type: "string",
-        input: false, // se establece solo para admins
-      },
+      role: { type: "string", defaultValue: "USER", input: false },
+      adminUniqueId: { type: "string", input: false },
     },
   },
   trustedOrigins,

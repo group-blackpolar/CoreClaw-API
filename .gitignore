@@ -1,1 +1,4 @@
-
+node_modules
+cmd
+.env
+.env.baseline

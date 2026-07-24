@@ -9,7 +9,9 @@ datasource db {
 
 enum Role {
   USER
+  DEVELOPER
   ADMIN
+  SUPERADMIN
 }
 
 model User {
@@ -72,17 +74,28 @@ model Verification {
   @@map("verifications")
 }
 
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String   // "user.create", "token.revoke", "logs.view", etc.
+  targetType String?
+  targetId   String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+}
+
 model ApiKey {
-  id        String    @id @default(cuid())
-  userId    String
-  name      String
-  keyHash   String    @unique
-  prefix    String
-  lastUsed  DateTime?
-  expiresAt DateTime?
-  createdAt DateTime  @default(now())
-
+  id         String    @id @default(cuid())
+  userId     String
+  name       String
+  keyHash    String    @unique
+  prefix     String
+  scopes     String[]
+  lastUsed   DateTime?
+  expiresAt  DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
   @@map("api_keys")
 }

@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:16-alpine
-    container_name: blackpolar-db
+    container_name: corecrow-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: blackpolar
@@ -9,8 +9,6 @@ services:
       POSTGRES_DB: blackpolar
     volumes:
       - pgdata:/var/lib/postgresql/data
-    # Solo accesible desde el propio host (127.0.0.1) — nunca expuesta a
-    # internet. Si necesitas conectarte desde tu máquina, usa un túnel SSH.
     ports:
       - "127.0.0.1:5432:5432"
     healthcheck:
@@ -19,20 +17,36 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    container_name: corecrow-redis
+    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Sin "ports:" — solo la API lo consume, dentro de la red interna de Compose
+
   api:
     build: .
-    container_name: blackpolar-api
+    container_name: corecrow-api
     restart: unless-stopped
     env_file:
       - .env
     environment:
       DATABASE_URL: postgresql://blackpolar:${POSTGRES_PASSWORD}@db:5432/blackpolar
+      REDIS_URL: redis://redis:6379
     depends_on:
       db:
         condition: service_healthy
-    # Nginx en el host hace proxy_pass a 127.0.0.1:4000 — igual que antes.
+      redis:
+        condition: service_healthy
     ports:
       - "127.0.0.1:4000:4000"
 
 volumes:
   pgdata:
+  redisdata:

@@ -8,3 +8,5 @@ declare module "fastify" {
     admin?: { id: string; role: string };
   }
 }
+
+// fix

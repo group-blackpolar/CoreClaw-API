@@ -53,7 +53,7 @@ model Account {
   providerId   String
   accessToken  String?
   refreshToken String?
-  expiresAt    DateTime?
+  expiresAt    DateTime
   password     String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -93,7 +93,7 @@ model ApiKey {
   prefix     String
   scopes     String[]
   lastUsed   DateTime?
-  expiresAt  DateTime?
+  expiresAt  DateTime
   revokedAt  DateTime?
   createdAt  DateTime  @default(now())
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
